@@ -2,6 +2,14 @@
 # Claude Code status line : modele | dossier | branche git | contexte | session | semaine
 input=$(cat)
 
+# Windows (Git Bash) : jq installe via winget n'est pas toujours dans le PATH de bash
+if ! command -v jq >/dev/null 2>&1 && [ -n "$LOCALAPPDATA" ]; then
+  winget_dir=$(cygpath -u "$LOCALAPPDATA" 2>/dev/null)/Microsoft/WinGet
+  for d in "$winget_dir"/Packages/jqlang.jq_*/ "$winget_dir"/Links/; do
+    [ -x "${d}jq.exe" ] && { PATH="$PATH:${d%/}"; break; }
+  done
+fi
+
 if command -v jq >/dev/null 2>&1; then
   model=$(echo "$input" | jq -r '.model.display_name // empty')
   dir=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
