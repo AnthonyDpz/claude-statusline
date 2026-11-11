@@ -6,6 +6,8 @@ Une status line colorée pour [Claude Code](https://claude.com/claude-code) : mo
 Sonnet 5.5 | monprojet |  main* | contexte ▰▰▱▱▱▱ 28 % | session ▰▰▰▰▱▱ 60 % ↻ 2h09 | semaine ▰▰▰▰▰▱ 90 % ↻ 2j 7h | Σ 72k tok | ⏱ 1h24
 ```
 
+![claude-statusline](docs/screenshot.png)
+
 > 🇬🇧 English guide: [README.md](README.md)
 
 ## Ce qui est affiché
