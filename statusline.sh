@@ -57,7 +57,7 @@ dirty=""
 if git -C "$dir" --no-optional-locks rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   branch=$(git -C "$dir" --no-optional-locks symbolic-ref --short -q HEAD 2>/dev/null \
     || git -C "$dir" --no-optional-locks rev-parse --short HEAD 2>/dev/null)
-  if [ -n "$(git -C "$dir" --no-optional-locks status --porcelain 2>/dev/null)" ]; then
+  if [ -n "$(git -C "$dir" -c core.fsmonitor=false --no-optional-locks status --porcelain 2>/dev/null)" ]; then
     dirty="*"
   fi
 fi
