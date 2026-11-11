@@ -11,6 +11,7 @@ if command -v jq >/dev/null 2>&1; then
   session_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
   week_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
   duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // empty')
+  transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 else
   # Repli sans jq : extraction approximative par sed (pas de session/semaine)
   model=$(echo "$input" | sed -n 's/.*"display_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)
@@ -22,6 +23,36 @@ else
   session_reset=""
   week_reset=""
   duration_ms=""
+  transcript=""
+fi
+
+# 69246 -> "69k", 1250000 -> "1.2M"
+fmt_tokens() {
+  local n=$1
+  if [ "$n" -ge 1000000 ]; then printf '%s.%sM' $((n / 1000000)) $(( (n % 1000000) / 100000 ))
+  elif [ "$n" -ge 10000 ]; then printf '%sk' $((n / 1000))
+  elif [ "$n" -ge 1000 ]; then printf '%s.%sk' $((n / 1000)) $(( (n % 1000) / 100 ))
+  else printf '%s' "$n"; fi
+}
+
+# Cumul des tokens de la session (entree + sortie + ecriture cache, hors lectures de cache)
+# et nombre de requetes, lus dans le transcript. Resultat mis en cache selon la taille du fichier.
+tokens_total=""
+tokens_requests=""
+if [ -n "$transcript" ] && [ -f "$transcript" ] && command -v jq >/dev/null 2>&1; then
+  size=$(stat -f %z "$transcript" 2>/dev/null || stat -c %s "$transcript" 2>/dev/null)
+  cache="${TMPDIR:-/tmp}/claude-statusline-tokens-$(basename "$transcript" .jsonl)"
+  [ -f "$cache" ] && read -r c_size c_total c_requests < "$cache"
+  if [ "$c_size" = "$size" ] && [ -n "$c_total" ]; then
+    tokens_total=$c_total; tokens_requests=$c_requests
+  else
+    read -r tokens_requests tokens_total < <(jq -rs '
+      [ .[] | select(.type == "assistant" and .message.usage != null) ]
+      | group_by(.message.id) | map(last.message.usage)
+      | "\(length) \(map((.input_tokens // 0) + (.output_tokens // 0) + (.cache_creation_input_tokens // 0)) | add // 0)"
+    ' "$transcript" 2>/dev/null)
+    [ -n "$tokens_total" ] && echo "$size $tokens_total $tokens_requests" > "$cache" 2>/dev/null
+  fi
 fi
 
 # Secondes -> "2j 4h" / "2h10" / "35min"
@@ -91,6 +122,9 @@ fi
 [ -n "$used" ]    && out="$out$sep$(segment contexte "$used")"
 [ -n "$session" ] && out="$out$sep$(segment session "$session" "$(fmt_reset "$session_reset")")"
 [ -n "$week" ]    && out="$out$sep$(segment semaine "$week" "$(fmt_reset "$week_reset")")"
+if [ -n "$tokens_total" ] && [ "${tokens_requests:-0}" -gt 0 ]; then
+  out="$out$sep$(printf '\033[90mΣ %s tok\033[0m' "$(fmt_tokens "$tokens_total")")"
+fi
 if [ -n "$duration_ms" ]; then
   out="$out$sep$(printf '\033[90m⏱ %s\033[0m' "$(fmt_duration $((${duration_ms%%.*} / 1000)))")"
 fi

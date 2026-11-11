@@ -1,0 +1,8 @@
+.DS_Store
+
+# réglages et secrets personnels : ne jamais les publier
+.env
+.env.*
+*.local.json
+settings.json
+statusline-last-input.json
