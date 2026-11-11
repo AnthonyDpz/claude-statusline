@@ -56,6 +56,25 @@ Puis ajoutez ceci dans `~/.claude/settings.json` :
 
 La status line apparaît après le prochain message, ou au redémarrage de la session.
 
+### Windows
+
+Utilisez [Git for Windows](https://gitforwindows.org/) (qui fournit `bash`), puis installez `jq` depuis PowerShell :
+
+```powershell
+winget install jqlang.jq
+```
+
+Redémarrez ensuite votre terminal pour que `jq` soit pris en compte dans le `PATH`. Copiez le script dans `%USERPROFILE%\.claude\` (par exemple `git clone` puis `cp statusline.sh ~/.claude/` depuis Git Bash) et appelez-le via `bash` dans `%USERPROFILE%\.claude\settings.json` :
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  }
+}
+```
+
 ## Test rapide
 
 ```bash
