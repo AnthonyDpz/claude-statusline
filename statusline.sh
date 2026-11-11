@@ -80,7 +80,10 @@ fmt_reset() {
     target=$r
     [ "$target" -gt 100000000000 ] && target=$((target / 1000))
   else
-    target=$(date -j -u -f '%Y-%m-%dT%H:%M:%S' "${r%%.*}" +%s 2>/dev/null) || return
+    # GNU date (Linux, Git Bash) d'abord, puis BSD date (macOS)
+    target=$(date -d "$r" +%s 2>/dev/null) \
+      || target=$(date -j -u -f '%Y-%m-%dT%H:%M:%S' "${r%%.*}" +%s 2>/dev/null) \
+      || return
   fi
   now=$(date +%s)
   [ "$target" -le "$now" ] && return
